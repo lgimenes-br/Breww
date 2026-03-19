@@ -5,7 +5,6 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianG
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { TemperatureChart } from './TemperatureChart';
-import { EventLog } from './EventLog';
 
 interface InsightModalProps {
   isOpen: boolean;
@@ -181,7 +180,7 @@ export const InsightModal: React.FC<InsightModalProps> = ({ isOpen, onClose, ins
           <div className="mb-8 bg-black/40 border border-neutral-800 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-white mb-6">Projeção de Atenuação</h3>
             <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                 <AreaChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                   <defs>
                     <linearGradient id="colorGravity" x1="0" y1="0" x2="0" y2="1">
@@ -231,14 +230,6 @@ export const InsightModal: React.FC<InsightModalProps> = ({ isOpen, onClose, ins
             className="mb-8 bg-black/40 border border-neutral-800 rounded-xl p-6"
             titleClassName="text-lg font-semibold text-white mb-6"
           />
-
-          {/* Event Log */}
-          <div className="mb-8 bg-black/40 border border-neutral-800 rounded-xl p-6">
-            <EventLog 
-              events={fermenter.events || []} 
-              titleClassName="text-lg font-semibold text-white"
-            />
-          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Risks */}

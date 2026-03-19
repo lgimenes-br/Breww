@@ -11,6 +11,9 @@ interface FinishedBrewDetailProps {
 
 export const FinishedBrewDetail: React.FC<FinishedBrewDetailProps> = ({ brew }) => {
   const [copied, setCopied] = React.useState(false);
+  const [annotation, setAnnotation] = React.useState(brew.notes || '');
+  const [isEditingAnnotation, setIsEditingAnnotation] = React.useState(false);
+
   const attenuation = ((brew.og - brew.fg) / (brew.og - 1)) * 100;
   const calories = (brew.abv * 2.5) * (brew.fg * 10);
 
@@ -51,6 +54,14 @@ export const FinishedBrewDetail: React.FC<FinishedBrewDetailProps> = ({ brew }) 
     <div className="p-6 md:p-8 w-full animate-in fade-in slide-in-from-bottom-4 duration-300 pb-16">
       <div className="flex justify-end items-center mb-8 no-print">
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsEditingAnnotation(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 transition-all text-xs font-bold uppercase tracking-wider"
+          >
+            <Quote size={14} />
+            {annotation ? 'Editar Anotação' : 'Adicionar Anotação'}
+          </button>
+          
           <button 
             onClick={handleShare}
             className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white rounded-xl border border-neutral-800 transition-all text-xs font-bold uppercase tracking-wider"
@@ -123,21 +134,43 @@ export const FinishedBrewDetail: React.FC<FinishedBrewDetailProps> = ({ brew }) 
         />
       </div>
 
-      {/* Notes Quote */}
-      {brew.notes && (
-          <div className="relative bg-neutral-900/20 rounded-2xl p-8 mb-12 border border-neutral-800/50">
-             <Quote className="absolute top-6 left-6 text-neutral-800 transform -scale-x-100 opacity-50" size={48} />
-             <p className="relative z-10 text-xl font-light text-neutral-300 italic text-center max-w-3xl mx-auto leading-relaxed">
-                "{brew.notes}"
-             </p>
-          </div>
+      {/* Notes / Annotation Section */}
+      {annotation && !isEditingAnnotation && (
+        <div className="mb-12 print:mb-8">
+           <h3 className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-2">Anotações do Lote</h3>
+           <p className="text-neutral-300 text-sm whitespace-pre-wrap leading-relaxed">
+              {annotation}
+           </p>
+        </div>
+      )}
+
+      {isEditingAnnotation && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 no-print">
+            <div className="bg-neutral-900 border border-neutral-800 w-full max-w-2xl rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                <h3 className="text-lg font-bold text-white mb-6">Anotações do Lote</h3>
+                <textarea 
+                  value={annotation}
+                  onChange={(e) => setAnnotation(e.target.value)}
+                  className="w-full bg-black border border-neutral-800 rounded-xl p-4 text-neutral-300 focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 outline-none resize-y min-h-[200px]"
+                  placeholder="Adicione suas observações, notas de degustação ou comentários para o PDF..."
+                />
+                <div className="flex justify-end gap-3 mt-6">
+                  <button 
+                    onClick={() => setIsEditingAnnotation(false)}
+                    className="px-6 py-3 bg-neutral-100 hover:bg-white text-black rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                  >
+                    Concluir
+                  </button>
+                </div>
+            </div>
+        </div>
       )}
 
       {/* Charts Section - min-w-0 for ResponsiveContainer support */}
       <div className="grid grid-cols-1 gap-8 min-w-0">
          <div className="space-y-4 min-w-0">
             <h3 className="text-neutral-500 text-xs font-bold uppercase tracking-widest pl-2">Perfil de Temperatura</h3>
-            <TemperatureChart data={brew.readings} />
+            <TemperatureChart data={brew.readings} events={brew.events} />
          </div>
          <div className="space-y-4 min-w-0">
             <h3 className="text-neutral-500 text-xs font-bold uppercase tracking-widest pl-2">Curva de Atenuação</h3>

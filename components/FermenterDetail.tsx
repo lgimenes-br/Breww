@@ -6,6 +6,7 @@ import { TemperatureChart } from './TemperatureChart';
 import { GravityChart } from './GravityChart';
 import { GeminiAdvisor } from './GeminiAdvisor';
 import { FermentationProfile } from './FermentationProfile';
+import { useSettings } from '../SettingsContext';
 
 interface FermenterDetailProps {
   fermenter: Fermenter;
@@ -13,6 +14,7 @@ interface FermenterDetailProps {
 }
 
 export const FermenterDetail: React.FC<FermenterDetailProps> = ({ fermenter, onUpdate }) => {
+  const { settings } = useSettings();
   
   // Local state for Kegerator Config to handle inputs before saving
   const [kegeratorForm, setKegeratorForm] = useState<KegeratorConfig>({
@@ -377,7 +379,7 @@ export const FermenterDetail: React.FC<FermenterDetailProps> = ({ fermenter, onU
                         {/* Big Numbers */}
                         <div className="flex items-baseline justify-between">
                             <div className="flex flex-col">
-                                <span className="text-neutral-600 text-sm mb-1">Temperatura (Mosto)</span>
+                                <span className="text-neutral-600 text-sm mb-1">Temperatura ({settings.sensor1Name})</span>
                                 <div className="flex items-center gap-1">
                                     <span className="text-4xl font-light text-white font-mono">
                                         {fermenter.currentDevice.temperature.toFixed(1)}
@@ -405,7 +407,7 @@ export const FermenterDetail: React.FC<FermenterDetailProps> = ({ fermenter, onU
                             </div>
                              <div className="text-center">
                                 <Snowflake size={16} className="text-neutral-600 mx-auto mb-2" />
-                                <span className="block text-[10px] font-bold text-neutral-600 uppercase mb-1">Geladeira</span>
+                                <span className="block text-[10px] font-bold text-neutral-600 uppercase mb-1">{settings.sensor2Name}</span>
                                 <span className="block text-sm font-mono text-blue-300">{fermenter.currentFridgeTemp.toFixed(1)}°</span>
                             </div>
                              <div className="text-center">

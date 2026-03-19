@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Fermenter, FermenterStatus, DeviceMode } from '../types';
 import { Wifi, ArrowRight, Thermometer, Settings, X, Save, Network, Plus, Search, Loader2, Smartphone, Trash2, AlertTriangle } from 'lucide-react';
+import { useSettings } from '../SettingsContext';
 
 interface DashboardProps {
   fermenters: Fermenter[];
@@ -18,6 +19,7 @@ interface ScannedDevice {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ fermenters, onSelectFermenter, onUpdateFermenter, onAddFermenter, onDeleteFermenter }) => {
+  const { settings } = useSettings();
   // Edit States
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -115,11 +117,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ fermenters, onSelectFermen
 
   return (
     <div className="p-6 md:p-8 w-full animate-in fade-in duration-500">
-      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-            <h1 className="text-4xl font-light tracking-tight text-white mb-2">Dispositivos</h1>
-            <p className="text-neutral-500 font-light">Gerenciamento de equipamentos e conexões</p>
-        </div>
+      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-end gap-4">
         <div className="flex flex-col md:items-end gap-2">
             <div className="text-xs text-neutral-600 font-mono mb-1">
                 {fermenters.length} UNIDADES CONECTADAS
@@ -266,7 +264,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ fermenters, onSelectFermen
                              {/* Sub-metric: Fridge */}
                              <div className="flex items-center gap-1.5">
                                   <Thermometer size={12} className="text-neutral-600" />
-                                  <span className="text-xs text-neutral-500">Geladeira: {f.currentFridgeTemp.toFixed(1)}°</span>
+                                  <span className="text-xs text-neutral-500">{settings.sensor2Name}: {f.currentFridgeTemp.toFixed(1)}°</span>
                              </div>
                         </div>
                     </div>

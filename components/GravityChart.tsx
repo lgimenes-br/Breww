@@ -46,7 +46,7 @@ export const GravityChart: React.FC<GravityChartProps> = ({ data, og, fg, events
       <h3 className="text-neutral-500 font-bold mb-6 text-xs uppercase tracking-widest pl-2">Curva de Atenuação (Gravidade)</h3>
       {/* Fixed height container for Recharts */}
       <div className="w-full h-[350px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorGravity" x1="0" y1="0" x2="0" y2="1">

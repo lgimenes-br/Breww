@@ -148,6 +148,10 @@ export const MOCK_HISTORY: FinishedBrew[] = [
     efficiency: 80,
     rating: 4,
     notes: 'Fermentação limpa, notas cítricas bem presentes.',
+    events: [
+        { id: 'e1', type: EventType.DRY_HOP, description: 'Dry hop 50g Citra', timestamp: new Date(new Date('2023-11-15').getTime() - 4 * 24 * 60 * 60 * 1000).toISOString() },
+        { id: 'e2', type: EventType.COLD_CRASH, description: 'Início do Cold Crash', timestamp: new Date(new Date('2023-11-15').getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+    ],
     readings: generateReadings(14, 1.050, new Date('2023-11-15'))
   }
 ];

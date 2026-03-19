@@ -1,51 +1,26 @@
 
 import React, { useState } from 'react';
 import { Save, Power, Activity, Thermometer, RotateCcw, Download, Trash2, Cpu, Zap, Sliders } from 'lucide-react';
-
-interface PIDParams {
-  kp: number;
-  ki: number;
-  kd: number;
-}
-
-interface SystemSettings {
-  logInterval: number;
-  compressorDelay: number;
-  chartPoints: number;
-  sensor1Name: string;
-  sensor2Name: string;
-  offsetS1: number;
-  offsetS2: number;
-  offsetSG: number;
-  pidHeating: PIDParams;
-  pidCooling: PIDParams;
-}
+import { useSettings, SystemSettings, PIDParams } from '../SettingsContext';
 
 export const Settings: React.FC = () => {
-  const [settings, setSettings] = useState<SystemSettings>({
-    logInterval: 30,
-    compressorDelay: 310,
-    chartPoints: 50,
-    sensor1Name: 'Fermentador',
-    sensor2Name: 'Geladeira',
-    offsetS1: 0,
-    offsetS2: 0,
-    offsetSG: 0,
-    pidHeating: { kp: 20000, ki: 100, kd: 0 },
-    pidCooling: { kp: 40000, ki: 200, kd: 0 }
-  });
-
+  const { settings, updateSettings } = useSettings();
+  const [localSettings, setLocalSettings] = useState<SystemSettings>(settings);
   const [relayState, setRelayState] = useState<'AUTO' | 'HEAT' | 'COOL'>('AUTO');
 
   const handleChange = (field: keyof SystemSettings, value: any) => {
-    setSettings(prev => ({ ...prev, [field]: value }));
+    setLocalSettings(prev => ({ ...prev, [field]: value }));
   };
 
   const handlePIDChange = (type: 'pidHeating' | 'pidCooling', param: keyof PIDParams, value: number) => {
-    setSettings(prev => ({
+    setLocalSettings(prev => ({
       ...prev,
       [type]: { ...prev[type], [param]: value }
     }));
+  };
+
+  const handleSave = () => {
+    updateSettings(localSettings);
   };
 
   const SectionHeader = ({ icon: Icon, title }: { icon: any, title: string }) => (
@@ -82,20 +57,20 @@ export const Settings: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <InputField 
             label="Intervalo Log ESP32 (s)" 
-            value={settings.logInterval} 
+            value={localSettings.logInterval} 
             onChange={(v: number) => handleChange('logInterval', v)} 
             type="number" 
           />
           <InputField 
             label="Delay Compressor (s)" 
-            value={settings.compressorDelay} 
+            value={localSettings.compressorDelay} 
             onChange={(v: number) => handleChange('compressorDelay', v)} 
             type="number" 
           />
           <div className="space-y-2">
              <InputField 
               label="Pontos no Gráfico (Zoom)" 
-              value={settings.chartPoints} 
+              value={localSettings.chartPoints} 
               onChange={(v: number) => handleChange('chartPoints', v)} 
               type="number" 
             />
@@ -103,7 +78,7 @@ export const Settings: React.FC = () => {
           </div>
         </div>
         <div className="mt-6 flex justify-end">
-          <button className="bg-neutral-100 hover:bg-white text-black px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2">
+          <button onClick={handleSave} className="bg-neutral-100 hover:bg-white text-black px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2">
             <Save size={14} /> Salvar Gerais
           </button>
         </div>
@@ -115,17 +90,17 @@ export const Settings: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <InputField 
             label="Nome Sensor 1 (Fermentador)" 
-            value={settings.sensor1Name} 
+            value={localSettings.sensor1Name} 
             onChange={(v: string) => handleChange('sensor1Name', v)} 
           />
           <InputField 
             label="Nome Sensor 2 (Ambiente)" 
-            value={settings.sensor2Name} 
+            value={localSettings.sensor2Name} 
             onChange={(v: string) => handleChange('sensor2Name', v)} 
           />
         </div>
         <div className="mt-6 flex justify-end">
-          <button className="bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2">
+          <button onClick={handleSave} className="bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2">
             <Save size={14} /> Salvar Nomes
           </button>
         </div>
@@ -138,25 +113,25 @@ export const Settings: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <InputField 
             label="Offset S1 (°C)" 
-            value={settings.offsetS1} 
+            value={localSettings.offsetS1} 
             onChange={(v: number) => handleChange('offsetS1', v)} 
             type="number" 
           />
           <InputField 
             label="Offset S2 (°C)" 
-            value={settings.offsetS2} 
+            value={localSettings.offsetS2} 
             onChange={(v: number) => handleChange('offsetS2', v)} 
             type="number" 
           />
           <InputField 
             label="Offset SG" 
-            value={settings.offsetSG} 
+            value={localSettings.offsetSG} 
             onChange={(v: number) => handleChange('offsetSG', v)} 
             type="number" 
           />
         </div>
         <div className="mt-6 flex justify-end">
-          <button className="bg-neutral-100 hover:bg-white text-black px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 shadow-lg">
+          <button onClick={handleSave} className="bg-neutral-100 hover:bg-white text-black px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 shadow-lg">
             <Save size={14} /> Salvar Calibração
           </button>
         </div>
@@ -171,9 +146,9 @@ export const Settings: React.FC = () => {
                 <span className="w-2 h-2 rounded-full bg-neutral-600"></span> Aquecimento
             </h4>
             <div className="grid grid-cols-3 gap-4">
-                <InputField label="Kp" value={settings.pidHeating.kp} onChange={(v: number) => handlePIDChange('pidHeating', 'kp', v)} type="number" />
-                <InputField label="Ki" value={settings.pidHeating.ki} onChange={(v: number) => handlePIDChange('pidHeating', 'ki', v)} type="number" />
-                <InputField label="Kd" value={settings.pidHeating.kd} onChange={(v: number) => handlePIDChange('pidHeating', 'kd', v)} type="number" />
+                <InputField label="Kp" value={localSettings.pidHeating.kp} onChange={(v: number) => handlePIDChange('pidHeating', 'kp', v)} type="number" />
+                <InputField label="Ki" value={localSettings.pidHeating.ki} onChange={(v: number) => handlePIDChange('pidHeating', 'ki', v)} type="number" />
+                <InputField label="Kd" value={localSettings.pidHeating.kd} onChange={(v: number) => handlePIDChange('pidHeating', 'kd', v)} type="number" />
             </div>
         </div>
 
@@ -182,14 +157,14 @@ export const Settings: React.FC = () => {
                 <span className="w-2 h-2 rounded-full bg-neutral-600"></span> Refrigeração
             </h4>
             <div className="grid grid-cols-3 gap-4">
-                <InputField label="Kp" value={settings.pidCooling.kp} onChange={(v: number) => handlePIDChange('pidCooling', 'kp', v)} type="number" />
-                <InputField label="Ki" value={settings.pidCooling.ki} onChange={(v: number) => handlePIDChange('pidCooling', 'ki', v)} type="number" />
-                <InputField label="Kd" value={settings.pidCooling.kd} onChange={(v: number) => handlePIDChange('pidCooling', 'kd', v)} type="number" />
+                <InputField label="Kp" value={localSettings.pidCooling.kp} onChange={(v: number) => handlePIDChange('pidCooling', 'kp', v)} type="number" />
+                <InputField label="Ki" value={localSettings.pidCooling.ki} onChange={(v: number) => handlePIDChange('pidCooling', 'ki', v)} type="number" />
+                <InputField label="Kd" value={localSettings.pidCooling.kd} onChange={(v: number) => handlePIDChange('pidCooling', 'kd', v)} type="number" />
             </div>
         </div>
         
         <div className="mt-8 flex justify-end">
-          <button className="bg-neutral-100 hover:bg-white text-black px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 shadow-lg">
+          <button onClick={handleSave} className="bg-neutral-100 hover:bg-white text-black px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 shadow-lg">
             <Save size={14} /> Atualizar PID
           </button>
         </div>

@@ -106,6 +106,7 @@ export interface FinishedBrew {
   efficiency: number; // attenuation
   rating?: number; // 1-5 stars
   notes: string;
+  events?: FermentationEvent[];
   readings: Reading[]; // Adicionado para gráficos históricos
 }
 

@@ -14,6 +14,8 @@ import {
 import { Reading, FermentationEvent } from '../types';
 import { EventLog } from './EventLog';
 
+import { useSettings } from '../SettingsContext';
+
 interface TemperatureChartProps {
   data: Reading[];
   events?: FermentationEvent[];
@@ -24,6 +26,7 @@ interface TemperatureChartProps {
 }
 
 export const TemperatureChart: React.FC<TemperatureChartProps> = ({ data, events = [], onAddEvent, onRemoveEvent, className, titleClassName }) => {
+  const { settings } = useSettings();
   // Map events to the closest data point's timestamp for alignment
   const eventMarks = events.map(event => {
     const eventTime = new Date(event.timestamp).getTime();
@@ -39,7 +42,7 @@ export const TemperatureChart: React.FC<TemperatureChartProps> = ({ data, events
       <h3 className={titleClassName || "text-neutral-500 font-bold mb-6 text-xs uppercase tracking-widest pl-2"}>Histórico de Temperatura</h3>
       {/* Fixed height container for Recharts */}
       <div className="w-full h-[350px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--color-neutral-700))" vertical={false} strokeWidth={0.5} opacity={0.5} />
             <XAxis 
@@ -90,7 +93,7 @@ export const TemperatureChart: React.FC<TemperatureChartProps> = ({ data, events
             <Line 
               type="linear" 
               dataKey="beerTemp" 
-              name="Cerveja" 
+              name={settings.sensor1Name} 
               stroke="rgb(var(--color-neutral-100))" 
               strokeWidth={1.5} 
               dot={false} 
@@ -108,7 +111,7 @@ export const TemperatureChart: React.FC<TemperatureChartProps> = ({ data, events
              <Line 
               type="linear" 
               dataKey="fridgeTemp" 
-              name="Geladeira" 
+              name={settings.sensor2Name} 
               stroke="#3b82f6" 
               strokeWidth={1} 
               dot={false} 
@@ -118,7 +121,7 @@ export const TemperatureChart: React.FC<TemperatureChartProps> = ({ data, events
         </ResponsiveContainer>
       </div>
 
-      {onAddEvent && onRemoveEvent && (
+      {events && (
         <div className="mt-8 pt-6 border-t border-neutral-800/50 -mx-2">
            <div className="px-2">
              <EventLog events={events} onAddEvent={onAddEvent} onRemoveEvent={onRemoveEvent} />
