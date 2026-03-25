@@ -27,6 +27,7 @@ export enum EventType {
   FRUIT = 'Adição de Fruta',
   CLARIFIER = 'Clarificador',
   SPICE = 'Especiarias',
+  COLD_CRASH = 'Cold Crash',
   OTHER = 'Outro'
 }
 

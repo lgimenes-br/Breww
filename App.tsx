@@ -9,7 +9,7 @@ import { FinishedBrewDetail } from './components/FinishedBrewDetail';
 import { Settings } from './components/Settings';
 import { MOCK_FERMENTERS } from './services/mockData';
 import { Fermenter, FermenterStatus, BeerStyle, DeviceMode, FinishedBrew } from './types';
-import { History, LogOut, Settings as SettingsIcon, LayoutGrid, ArrowLeft, Snowflake, Circle, Flame, Timer, Sun, Moon, Menu, X } from 'lucide-react';
+import { History, LogOut, Settings as SettingsIcon, ArrowLeft, Snowflake, Circle, Flame, Timer, Menu, X, FlaskConical, Beer, ChevronDown, AlertTriangle } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 
 type ViewState = 'DASHBOARD' | 'HISTORY' | 'SETTINGS';
@@ -20,10 +20,38 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authView, setAuthView] = useState<AuthState>('LOGIN');
   const [currentView, setCurrentView] = useState<ViewState>('DASHBOARD');
+  const [previousView, setPreviousView] = useState<ViewState | null>(null);
   const [fermenters, setFermenters] = useState<Fermenter[]>(MOCK_FERMENTERS);
   const [selectedFermenterId, setSelectedFermenterId] = useState<string | null>(null);
   const [selectedBrew, setSelectedBrew] = useState<FinishedBrew | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
+  const [viewedMode, setViewedMode] = useState<DeviceMode | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+
+  useEffect(() => {
+    if (selectedFermenterId) {
+      const f = fermenters.find(f => f.id === selectedFermenterId);
+      if (f && !isPreviewing) {
+        setViewedMode(f.mode);
+      }
+    } else {
+      setViewedMode(null);
+      setIsPreviewing(false);
+    }
+  }, [selectedFermenterId, fermenters, isPreviewing]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.mode-selector-dropdown')) {
+            setIsModeMenuOpen(false);
+        }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Auto-refresh simulation
   useEffect(() => {
@@ -87,9 +115,15 @@ const App: React.FC = () => {
   };
 
   const handleBack = () => {
-    if (selectedBrew) {
+    if (currentView === 'SETTINGS') {
+      setCurrentView(previousView || 'DASHBOARD');
+      setPreviousView('DASHBOARD');
+    } else if (currentView === 'HISTORY' && selectedBrew) {
       setSelectedBrew(null);
-    } else if (selectedFermenterId) {
+    } else if (currentView === 'HISTORY') {
+      setCurrentView(previousView || 'DASHBOARD');
+      setPreviousView('DASHBOARD');
+    } else if (currentView === 'DASHBOARD' && selectedFermenterId) {
       setSelectedFermenterId(null);
     }
   };
@@ -126,7 +160,7 @@ const App: React.FC = () => {
   const isCooling = selectedFermenter && selectedFermenter.currentFridgeTemp < selectedFermenter.currentDevice.temperature - 0.2;
   const isHeating = selectedFermenter && selectedFermenter.currentFridgeTemp > selectedFermenter.currentDevice.temperature + 0.2;
 
-  const showBackButton = selectedFermenterId !== null || selectedBrew !== null;
+  const showBackButton = currentView !== 'DASHBOARD' || selectedFermenterId !== null;
 
   return (
     <div className="min-h-screen bg-black pb-10">
@@ -140,6 +174,7 @@ const App: React.FC = () => {
                 setSelectedFermenterId(null);
                 setSelectedBrew(null);
                 setCurrentView('DASHBOARD');
+                setPreviousView(null);
             }}
           >
             <div className="flex items-baseline">
@@ -182,28 +217,63 @@ const App: React.FC = () => {
                       <span className="hidden lg:inline">Estável</span>
                   </div>
                 )}
+
+                {/* Mode Selector Dropdown */}
+                <div className="relative mode-selector-dropdown">
+                    <button 
+                        onClick={() => setIsModeMenuOpen(!isModeMenuOpen)}
+                        className={`${headerBtnBase} border-neutral-800 text-white bg-transparent hover:bg-white/5`}
+                    >
+                        {viewedMode === DeviceMode.FERMENTER && <><FlaskConical size={14} /> <span className="hidden lg:inline">Fermentador</span></>}
+                        {viewedMode === DeviceMode.KEGERATOR && <><Beer size={14} /> <span className="hidden lg:inline">Chopeira</span></>}
+                        {viewedMode === DeviceMode.FRIDGE && <><Snowflake size={14} /> <span className="hidden lg:inline">Geladeira</span></>}
+                        <ChevronDown size={14} className={`transition-transform duration-200 ${isModeMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {isModeMenuOpen && (
+                        <div className="absolute right-0 mt-2 w-48 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <button 
+                                onClick={() => {
+                                    setViewedMode(DeviceMode.FERMENTER);
+                                    setIsPreviewing(true);
+                                    setIsModeMenuOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${viewedMode === DeviceMode.FERMENTER ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}
+                            >
+                                <FlaskConical size={14} /> Fermentador
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setViewedMode(DeviceMode.KEGERATOR);
+                                    setIsPreviewing(true);
+                                    setIsModeMenuOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${viewedMode === DeviceMode.KEGERATOR ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}
+                            >
+                                <Beer size={14} /> Chopeira
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setViewedMode(DeviceMode.FRIDGE);
+                                    setIsPreviewing(true);
+                                    setIsModeMenuOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors ${viewedMode === DeviceMode.FRIDGE ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}
+                            >
+                                <Snowflake size={14} /> Geladeira
+                            </button>
+                        </div>
+                    )}
+                </div>
               </>
             )}
 
             {/* Navigation Icons - Desktop */}
             <div className="hidden md:flex items-center gap-2">
               <button 
-                  title="Grid"
-                  onClick={() => {
-                      setSelectedFermenterId(null);
-                      setSelectedBrew(null);
-                      setCurrentView('DASHBOARD');
-                  }}
-                  className={`${iconOnlyBase} ${currentView === 'DASHBOARD' && !selectedFermenterId && !selectedBrew ? navBtnActive : navBtnDefault}`}
-              >
-                  <LayoutGrid size={18} />
-              </button>
-
-              <button 
                   title="Logs"
                   onClick={() => {
-                      setSelectedFermenterId(null);
-                      setSelectedBrew(null);
+                      if (currentView !== 'HISTORY') setPreviousView(currentView);
                       setCurrentView('HISTORY');
                   }}
                   className={`${iconOnlyBase} ${currentView === 'HISTORY' && !selectedBrew ? navBtnActive : navBtnDefault}`}
@@ -214,8 +284,7 @@ const App: React.FC = () => {
               <button 
                   title="Settings"
                   onClick={() => {
-                    setSelectedFermenterId(null);
-                    setSelectedBrew(null);
+                    if (currentView !== 'SETTINGS') setPreviousView(currentView);
                     setCurrentView('SETTINGS');
                   }}
                   className={`${iconOnlyBase} ${currentView === 'SETTINGS' ? navBtnActive : navBtnDefault}`}
@@ -223,22 +292,14 @@ const App: React.FC = () => {
                   <SettingsIcon size={18} />
               </button>
 
-              <button 
-                  title="Toggle Theme"
-                  onClick={toggleTheme}
-                  className={`${iconOnlyBase} ${navBtnDefault}`}
-              >
-                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-
               {/* Back Button - Centralized for all detailed views */}
               {showBackButton && (
                   <button 
                       onClick={handleBack}
-                      className={`${headerBtnBase} border-neutral-800 text-neutral-100 bg-neutral-900/40 hover:bg-neutral-800 ml-2`}
+                      className={`${iconOnlyBase} border-neutral-800 text-neutral-100 bg-transparent hover:bg-white/5 ml-2`}
+                      title="Voltar"
                   >
-                      <ArrowLeft size={14} />
-                      <span className="hidden lg:inline">Voltar</span>
+                      <ArrowLeft size={18} />
                   </button>
               )}
 
@@ -268,20 +329,7 @@ const App: React.FC = () => {
             <div className="md:hidden absolute top-20 right-4 left-4 bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-2 z-50 shadow-2xl">
                 <button 
                     onClick={() => {
-                        setSelectedFermenterId(null);
-                        setSelectedBrew(null);
-                        setCurrentView('DASHBOARD');
-                        setIsMobileMenuOpen(false);
-                    }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${currentView === 'DASHBOARD' && !selectedFermenterId && !selectedBrew ? 'bg-white/10 text-white' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}
-                >
-                    <LayoutGrid size={18} /> Dashboard
-                </button>
-
-                <button 
-                    onClick={() => {
-                        setSelectedFermenterId(null);
-                        setSelectedBrew(null);
+                        if (currentView !== 'HISTORY') setPreviousView(currentView);
                         setCurrentView('HISTORY');
                         setIsMobileMenuOpen(false);
                     }}
@@ -292,24 +340,13 @@ const App: React.FC = () => {
 
                 <button 
                     onClick={() => {
-                      setSelectedFermenterId(null);
-                      setSelectedBrew(null);
+                      if (currentView !== 'SETTINGS') setPreviousView(currentView);
                       setCurrentView('SETTINGS');
                       setIsMobileMenuOpen(false);
                     }}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all ${currentView === 'SETTINGS' ? 'bg-white/10 text-white' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}
                 >
                     <SettingsIcon size={18} /> Configurações
-                </button>
-
-                <button 
-                    onClick={() => {
-                        toggleTheme();
-                        setIsMobileMenuOpen(false);
-                    }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold uppercase tracking-wider text-neutral-400 hover:bg-white/5 hover:text-white transition-all"
-                >
-                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} Alternar Tema
                 </button>
 
                 {showBackButton && (
@@ -337,17 +374,52 @@ const App: React.FC = () => {
       </nav>
 
       <main className="mt-2">
-        {selectedBrew ? (
-          <FinishedBrewDetail brew={selectedBrew} />
-        ) : selectedFermenterId && selectedFermenter ? (
-          <FermenterDetail 
-            fermenter={selectedFermenter} 
-            onUpdate={handleUpdateFermenter}
-          />
-        ) : currentView === 'HISTORY' ? (
-          <FermentationHistory onSelectBrew={setSelectedBrew} />
-        ) : currentView === 'SETTINGS' ? (
+        {currentView === 'SETTINGS' ? (
           <Settings />
+        ) : currentView === 'HISTORY' ? (
+          selectedBrew ? <FinishedBrewDetail brew={selectedBrew} /> : <FermentationHistory onSelectBrew={setSelectedBrew} />
+        ) : selectedFermenterId && selectedFermenter ? (
+          <>
+            {viewedMode && viewedMode !== selectedFermenter.mode && (
+              <div className="mx-6 md:mx-8 mt-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+                <div className="flex items-start md:items-center gap-3">
+                  <AlertTriangle className="text-yellow-500 shrink-0 mt-0.5 md:mt-0" size={20} />
+                  <div>
+                    <h4 className="text-yellow-500 font-bold text-sm">
+                      Modo {viewedMode === DeviceMode.FERMENTER ? 'Fermentador' : viewedMode === DeviceMode.KEGERATOR ? 'Chopeira' : 'Geladeira'} Selecionado
+                    </h4>
+                    <p className="text-yellow-500/80 text-xs mt-1">
+                      Você está apenas visualizando. Deseja ativar este modo no dispositivo?
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <button 
+                    onClick={() => {
+                      setViewedMode(selectedFermenter.mode);
+                      setIsPreviewing(false);
+                    }}
+                    className="flex-1 md:flex-none px-4 py-2 text-xs font-bold text-neutral-400 hover:text-white bg-neutral-800/50 hover:bg-neutral-800 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={() => {
+                      handleUpdateFermenter(selectedFermenter.id, { mode: viewedMode });
+                      setIsPreviewing(false);
+                    }}
+                    className="flex-1 md:flex-none px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black text-xs font-bold rounded-lg transition-colors"
+                  >
+                    Ativar no Dispositivo
+                  </button>
+                </div>
+              </div>
+            )}
+            <FermenterDetail 
+              fermenter={{ ...selectedFermenter, mode: viewedMode || selectedFermenter.mode }} 
+              onUpdate={handleUpdateFermenter}
+            />
+          </>
         ) : (
           <Dashboard 
             fermenters={fermenters} 

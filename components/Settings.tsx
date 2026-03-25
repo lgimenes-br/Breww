@@ -1,10 +1,12 @@
 
 import React, { useState } from 'react';
-import { Save, Power, Activity, Thermometer, RotateCcw, Download, Trash2, Cpu, Zap, Sliders } from 'lucide-react';
+import { Save, Power, Activity, Thermometer, RotateCcw, Download, Trash2, Cpu, Zap, Sliders, Sun, Moon } from 'lucide-react';
 import { useSettings, SystemSettings, PIDParams } from '../SettingsContext';
+import { useTheme } from '../ThemeContext';
 
 export const Settings: React.FC = () => {
   const { settings, updateSettings } = useSettings();
+  const { theme, toggleTheme } = useTheme();
   const [localSettings, setLocalSettings] = useState<SystemSettings>(settings);
   const [relayState, setRelayState] = useState<'AUTO' | 'HEAT' | 'COOL'>('AUTO');
 
@@ -46,9 +48,18 @@ export const Settings: React.FC = () => {
   return (
     <div className="p-6 md:p-8 w-full animate-in fade-in duration-500 space-y-8 pb-20">
       
-      <header className="mb-10">
-        <h1 className="text-4xl font-light tracking-tight text-white mb-2">Configurações</h1>
-        <p className="text-neutral-500 font-light">Parâmetros do controlador ESP32 e calibração de sensores.</p>
+      <header className="mb-10 flex justify-between items-start">
+        <div>
+          <h1 className="text-4xl font-light tracking-tight text-white mb-2">Configurações</h1>
+          <p className="text-neutral-500 font-light">Parâmetros do controlador ESP32 e calibração de sensores.</p>
+        </div>
+        <button 
+            onClick={toggleTheme}
+            className="flex items-center justify-center w-10 h-10 rounded-md border border-neutral-800 text-neutral-400 hover:border-neutral-600 hover:text-white transition-all shrink-0"
+            title="Alternar Tema"
+        >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </header>
 
       {/* 1. Configurações Gerais */}

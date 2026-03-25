@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FermentationStep } from '../types';
 import { Plus, Trash2, Clock, Thermometer, Edit2, Check, Play, Pause, SkipForward, SkipBack, Square } from 'lucide-react';
 
@@ -37,6 +37,27 @@ export const FermentationProfile: React.FC<FermentationProfileProps> = ({
   onFinishProfile
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [localSteps, setLocalSteps] = useState<FermentationStep[]>(steps);
+  const [localOg, setLocalOg] = useState<number | undefined>(og);
+  const [localFg, setLocalFg] = useState<number | undefined>(fg);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setLocalSteps(steps);
+      setLocalOg(og);
+      setLocalFg(fg);
+    }
+  }, [isEditing, steps, og, fg]);
+
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      onUpdateSteps(localSteps);
+      if (onUpdateGravity && (localOg !== og || localFg !== fg)) {
+        onUpdateGravity(localOg || 0, localFg || 0);
+      }
+    }
+    setIsEditing(!isEditing);
+  };
 
   const handleAddStep = () => {
     const newStep: FermentationStep = {
@@ -45,67 +66,71 @@ export const FermentationProfile: React.FC<FermentationProfileProps> = ({
       temperature: 18,
       duration: 1
     };
-    onUpdateSteps([...steps, newStep]);
+    setLocalSteps(prev => [...prev, newStep]);
   };
 
   const handleRemoveStep = (id: string) => {
-    onUpdateSteps(steps.filter(s => s.id !== id));
+    setLocalSteps(prev => prev.filter(s => s.id !== id));
   };
 
   const handleChangeStep = (id: string, field: keyof FermentationStep, value: any) => {
-    onUpdateSteps(steps.map(s => s.id === id ? { ...s, [field]: value } : s));
+    setLocalSteps(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
-  const isLastStep = currentStepIndex >= steps.length - 1;
+  const displaySteps = isEditing ? localSteps : steps;
+  const displayOg = isEditing ? localOg : og;
+  const displayFg = isEditing ? localFg : fg;
+
+  const isLastStep = currentStepIndex >= displaySteps.length - 1;
 
   return (
     <div className="bg-neutral-900/30 rounded-3xl p-6 border border-neutral-800 backdrop-blur-sm flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-neutral-500 text-xs font-bold uppercase tracking-widest">Perfil de Fermentação</h3>
         <button 
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={handleToggleEdit}
             className="text-neutral-400 hover:text-white transition-colors"
         >
             {isEditing ? <Check size={16} className="text-green-500" /> : <Edit2 size={16} />}
         </button>
       </div>
 
-      {(style || volume || startDate || og || fg || isEditing) && (
+      {(style || volume || startDate || displayOg || displayFg || isEditing) && (
         <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500 font-light mb-6 pb-4 border-b border-neutral-800/50">
             {style && <span className="bg-neutral-900 px-2 py-1 rounded text-neutral-400">{style}</span>}
             {volume && <span>Vol: {volume}L</span>}
             {startDate && <span>Início: {new Date(startDate).toLocaleDateString()}</span>}
             
-            {(og !== undefined || isEditing) && (
+            {(displayOg !== undefined || isEditing) && (
               <div className="flex items-center gap-1">
                 <span>OG:</span>
                 {isEditing ? (
                   <input 
                     type="number" 
                     step="0.001"
-                    value={og || ''}
-                    onChange={(e) => onUpdateGravity?.(parseFloat(e.target.value) || 0, fg || 0)}
+                    value={displayOg || ''}
+                    onChange={(e) => setLocalOg(parseFloat(e.target.value) || 0)}
                     className="bg-neutral-800 border border-neutral-700 text-white rounded px-1 w-16 outline-none"
                   />
                 ) : (
-                  <span>{og?.toFixed(3)}</span>
+                  <span>{displayOg?.toFixed(3)}</span>
                 )}
               </div>
             )}
             
-            {(fg !== undefined || isEditing) && (
+            {(displayFg !== undefined || isEditing) && (
               <div className="flex items-center gap-1">
                 <span>FG:</span>
                 {isEditing ? (
                   <input 
                     type="number" 
                     step="0.001"
-                    value={fg || ''}
-                    onChange={(e) => onUpdateGravity?.(og || 0, parseFloat(e.target.value) || 0)}
+                    value={displayFg || ''}
+                    onChange={(e) => setLocalFg(parseFloat(e.target.value) || 0)}
                     className="bg-neutral-800 border border-neutral-700 text-white rounded px-1 w-16 outline-none"
                   />
                 ) : (
-                  <span>{fg?.toFixed(3)}</span>
+                  <span>{displayFg?.toFixed(3)}</span>
                 )}
               </div>
             )}
@@ -113,7 +138,7 @@ export const FermentationProfile: React.FC<FermentationProfileProps> = ({
       )}
 
       <div className="space-y-3 relative mb-6">
-        {steps.map((step, index) => {
+        {displaySteps.map((step, index) => {
           const isActive = index === currentStepIndex;
           const isPast = index < currentStepIndex;
           
@@ -217,7 +242,7 @@ export const FermentationProfile: React.FC<FermentationProfileProps> = ({
       </div>
 
       {/* Control Bar Footer */}
-      {!isEditing && steps.length > 0 && (
+      {!isEditing && displaySteps.length > 0 && (
           <div className="grid grid-cols-4 gap-2 mt-auto pt-4 border-t border-neutral-800">
              <button 
                 onClick={onTogglePause}

@@ -6,6 +6,7 @@ import { TemperatureChart } from './TemperatureChart';
 import { GravityChart } from './GravityChart';
 import { GeminiAdvisor } from './GeminiAdvisor';
 import { FermentationProfile } from './FermentationProfile';
+import { FermentationWizard } from './FermentationWizard';
 import { useSettings } from '../SettingsContext';
 
 interface FermenterDetailProps {
@@ -32,8 +33,28 @@ export const FermenterDetail: React.FC<FermenterDetailProps> = ({ fermenter, onU
       }
   }, [fermenter.kegeratorConfig]);
 
-  const handleModeChange = (mode: DeviceMode) => {
-    onUpdate(fermenter.id, { mode });
+  const handleStartFermentation = (
+      steps: FermentationStep[], 
+      beerName: string, 
+      style: string, 
+      volume: number, 
+      og: number, 
+      fg: number
+  ) => {
+      onUpdate(fermenter.id, {
+          profile: steps,
+          beerName,
+          style: style as any,
+          volume,
+          og,
+          fg,
+          status: FermenterStatus.ACTIVE,
+          startDate: new Date().toISOString(),
+          currentStepIndex: 0,
+          isPaused: false,
+          targetTemp: steps[0]?.temperature || 20,
+          events: []
+      });
   };
   
   const handleUpdateSteps = (newSteps: FermentationStep[]) => {
@@ -76,11 +97,19 @@ export const FermenterDetail: React.FC<FermenterDetailProps> = ({ fermenter, onU
   };
 
   const handleFinishProfile = () => {
-      // Moves status to IDLE and stops the profile
+      // Moves status to IDLE, stops the profile, resets events, and sets targetTemp to the last step's temp
+      const lastStepTemp = fermenter.profile && fermenter.profile.length > 0
+          ? fermenter.profile[fermenter.profile.length - 1].temperature
+          : fermenter.targetTemp;
+
       onUpdate(fermenter.id, { 
           status: FermenterStatus.IDLE, 
           isPaused: false,
-          currentStepIndex: 0 
+          currentStepIndex: 0,
+          events: [],
+          targetTemp: lastStepTemp,
+          beerName: '',
+          profile: []
       });
   };
 
@@ -140,61 +169,15 @@ export const FermenterDetail: React.FC<FermenterDetailProps> = ({ fermenter, onU
     <div className="p-6 md:p-8 w-full animate-in fade-in duration-500">
       {/* Header Section Clean */}
       <div className="flex flex-col items-start mb-6 w-full">
-        <div className="w-full mb-12">
-            <div className="flex items-center gap-3 mb-1">
-                <span className={`w-2 h-2 rounded-full ${fermenter.currentDevice.lastUpdate ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'} animate-pulse`}></span>
-                <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest">{fermenter.name}</span>
-            </div>
-            <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter">{fermenter.beerName || 'Sem Nome'}</h1>
-        </div>
-
-        {/* Desktop Mode Selector */}
-        <div className="hidden md:flex w-full bg-transparent rounded-xl p-1.5 border border-neutral-800">
-            <button 
-                onClick={() => handleModeChange(DeviceMode.FERMENTER)}
-                className={`flex-1 flex justify-center items-center gap-2 px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-                    fermenter.mode === DeviceMode.FERMENTER 
-                    ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700' 
-                    : 'text-neutral-500 hover:text-neutral-300 bg-transparent'
-                }`}
-            >
-                <FlaskConical size={14} /> Fermentador
-            </button>
-            <button 
-                onClick={() => handleModeChange(DeviceMode.KEGERATOR)}
-                className={`flex-1 flex justify-center items-center gap-2 px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-                    fermenter.mode === DeviceMode.KEGERATOR 
-                    ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700' 
-                    : 'text-neutral-500 hover:text-neutral-300 bg-transparent'
-                }`}
-            >
-                <Beer size={14} /> Chopeira
-            </button>
-            <button 
-                onClick={() => handleModeChange(DeviceMode.FRIDGE)}
-                className={`flex-1 flex justify-center items-center gap-2 px-4 py-3 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
-                    fermenter.mode === DeviceMode.FRIDGE 
-                    ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700' 
-                    : 'text-neutral-500 hover:text-neutral-300 bg-transparent'
-                }`}
-            >
-                <Snowflake size={14} /> Geladeira
-            </button>
-        </div>
-
-        {/* Mobile Mode Selector */}
-        <div className="md:hidden w-full relative">
-            <select
-                value={fermenter.mode}
-                onChange={(e) => handleModeChange(e.target.value as DeviceMode)}
-                className="w-full bg-neutral-900 border border-neutral-800 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-neutral-500 appearance-none font-bold uppercase tracking-wider text-xs"
-            >
-                <option value={DeviceMode.FERMENTER}>Fermentador</option>
-                <option value={DeviceMode.KEGERATOR}>Chopeira</option>
-                <option value={DeviceMode.FRIDGE}>Geladeira</option>
-            </select>
-            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-neutral-400">
-                <ChevronDown size={16} />
+        <div className="w-full mb-12 flex justify-between items-start">
+            <div>
+                <div className="flex items-center gap-3 mb-1">
+                    <span className={`w-2 h-2 rounded-full ${fermenter.currentDevice.lastUpdate ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-red-500'} animate-pulse`}></span>
+                    <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest">{fermenter.name}</span>
+                </div>
+                <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter min-h-[60px]">
+                    {fermenter.status === FermenterStatus.IDLE ? '' : (fermenter.beerName || 'Sem Nome')}
+                </h1>
             </div>
         </div>
       </div>
@@ -353,7 +336,7 @@ export const FermenterDetail: React.FC<FermenterDetailProps> = ({ fermenter, onU
                 <div className="flex-1">
                     <TemperatureChart 
                         data={fermenter.readings} 
-                        events={fermenter.events} 
+                        events={fermenter.status === FermenterStatus.IDLE ? [] : fermenter.events} 
                         onAddEvent={handleAddEvent}
                         onRemoveEvent={handleRemoveEvent}
                     />
@@ -361,7 +344,12 @@ export const FermenterDetail: React.FC<FermenterDetailProps> = ({ fermenter, onU
 
                 {fermenter.mode === DeviceMode.FERMENTER && (
                     <div className="flex-1">
-                        <GravityChart data={fermenter.readings} og={fermenter.og} fg={fermenter.fg} events={fermenter.events} />
+                        <GravityChart 
+                            data={fermenter.readings} 
+                            og={fermenter.og} 
+                            fg={fermenter.fg} 
+                            events={fermenter.status === FermenterStatus.IDLE ? [] : fermenter.events} 
+                        />
                     </div>
                 )}
             </div>
@@ -450,22 +438,26 @@ export const FermenterDetail: React.FC<FermenterDetailProps> = ({ fermenter, onU
 
                 {fermenter.mode === DeviceMode.FERMENTER && (
                     <div className="shrink-0">
-                        <FermentationProfile 
-                            steps={fermenter.profile || []} 
-                            currentStepIndex={fermenter.currentStepIndex || 0}
-                            isPaused={fermenter.isPaused || false}
-                            style={fermenter.style}
-                            volume={fermenter.volume}
-                            startDate={fermenter.startDate}
-                            og={fermenter.og}
-                            fg={fermenter.fg}
-                            onUpdateSteps={handleUpdateSteps}
-                            onUpdateGravity={handleUpdateGravity}
-                            onTogglePause={handleTogglePause}
-                            onNextStep={handleNextStep}
-                            onPreviousStep={handlePreviousStep}
-                            onFinishProfile={handleFinishProfile}
-                        />
+                        {fermenter.status === FermenterStatus.IDLE ? (
+                            <FermentationWizard onStartFermentation={handleStartFermentation} />
+                        ) : (
+                            <FermentationProfile 
+                                steps={fermenter.profile || []} 
+                                currentStepIndex={fermenter.currentStepIndex || 0}
+                                isPaused={fermenter.isPaused || false}
+                                style={fermenter.style}
+                                volume={fermenter.volume}
+                                startDate={fermenter.startDate}
+                                og={fermenter.og}
+                                fg={fermenter.fg}
+                                onUpdateSteps={handleUpdateSteps}
+                                onUpdateGravity={handleUpdateGravity}
+                                onTogglePause={handleTogglePause}
+                                onNextStep={handleNextStep}
+                                onPreviousStep={handlePreviousStep}
+                                onFinishProfile={handleFinishProfile}
+                            />
+                        )}
                     </div>
                 )}
                 
